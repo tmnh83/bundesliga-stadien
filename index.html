@@ -62,6 +62,11 @@
     color: #7aaa88;
     letter-spacing: 0.5px;
   }
+  .header-copy {
+    font-size: 0.72rem;
+    color: rgba(255,255,255,0.45);
+    white-space: nowrap;
+  }
 
   /* LAYOUT */
   .app-body {
@@ -145,7 +150,12 @@
     font-weight: 500;
   }
 
-  /* MAP */
+  /* MAP wrapper */
+  .map-wrapper {
+    position: relative;
+    flex: 1;
+    min-height: 0;
+  }
   #map {
     flex: 1;
     z-index: 1;
@@ -359,16 +369,144 @@
     transform: rotate(-45deg);
     box-shadow: 0 3px 12px rgba(0,0,0,0.3);
   }
+
+  /* ── MOBILE NAV ───────────────────────────── */
+  .mobile-tabs { display: none; }
+
+  /* ── RESPONSIVE ───────────────────────────── */
+  @media (max-width: 768px) {
+
+    header {
+      padding: 0 12px;
+      height: 48px;
+      gap: 8px;
+    }
+    header h1 { font-size: 16px; letter-spacing: 1.5px; }
+    .logo-badge { font-size: 11px; padding: 2px 7px 1px; flex-shrink: 0; }
+    .header-copy { display: none; }
+    .header-meta { display: none; }
+
+    .app-body {
+      flex-direction: column;
+      min-height: 0;
+      overflow: visible;
+    }
+
+    /* Sidebar: hidden by default, shown as tab panel */
+    .sidebar {
+      display: none;
+      width: 100%;
+      max-height: 60vh;
+      border-right: none;
+      border-bottom: 1px solid var(--border);
+      overflow-y: auto;
+      flex-shrink: 0;
+    }
+    .sidebar.tab-active { display: flex; }
+    .sidebar-header h2 { margin-bottom: 0; }
+
+    /* 2-column grid for stadium list */
+    .stadium-list {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      padding: 8px;
+      gap: 6px;
+    }
+    .stadium-item {
+      padding: 10px 12px;
+      border-bottom: none;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      border-left: 3px solid transparent;
+    }
+    .stadium-item.active { border-left-color: var(--green); background: #ddf0e5; }
+    .item-club { font-size: 12px; }
+    .item-stadium { font-size: 11px; }
+    .item-cap { font-size: 10px; }
+
+    /* Map: full width, fixed height */
+    .map-wrapper {
+      display: none;
+      width: 100%;
+      height: calc(100vh - 48px - 52px);
+      position: relative;
+      flex: none;
+    }
+    .map-wrapper.tab-active { display: block; }
+
+    /* Info panel: full width scrollable */
+    .info-panel {
+      display: none;
+      width: 100%;
+      max-height: none;
+      border-left: none;
+      border-top: 1px solid var(--border);
+      overflow-y: auto;
+      padding-bottom: 80px;
+    }
+    .info-panel.tab-active { display: flex; }
+
+    /* Bottom tab bar */
+    .mobile-tabs {
+      display: flex;
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      height: 52px;
+      background: var(--green-dark);
+      border-top: 2px solid var(--green);
+      z-index: 2000;
+    }
+    .mobile-tab {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+      color: rgba(255,255,255,0.5);
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      cursor: pointer;
+      border: none;
+      background: transparent;
+      font-family: 'DM Sans', sans-serif;
+      transition: color 0.15s, background 0.15s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .mobile-tab .tab-icon { font-size: 18px; line-height: 1; }
+    .mobile-tab.active { color: #fff; background: rgba(26,122,60,0.35); }
+    .mobile-tab.active .tab-label { color: #7aff9a; }
+
+    /* Distanz section */
+    section { padding: 1rem 1rem 80px; }
+    section h2 { font-size: .95rem !important; }
+    .dist-row-top { flex-direction: column !important; gap: .6rem !important; }
+    #distResult { font-size: 1.2rem !important; }
+    #distDrive  { font-size: .8rem !important; }
+    .dist-drive-col { display: none; }
+
+    /* Map legend smaller & above bottom nav */
+    .map-legend {
+      bottom: 60px !important;
+      font-size: 0.65rem !important;
+      padding: 6px 8px !important;
+    }
+  }
+
+  @media (max-width: 380px) {
+    .stadium-list { grid-template-columns: 1fr; }
+    header h1 { font-size: 14px; }
+  }
 </style>
 </head>
 <body>
 
 <header>
   <div class="logo-badge">BUNDESLIGA</div>
-  <div style="display:flex;align-items:baseline;gap:0.75rem;flex-wrap:wrap;">
-    <h1>STADIONKARTE 2025/26</h1>
-    <span style="font-size:0.72rem;color:rgba(255,255,255,0.55);white-space:nowrap;">&copy; 2026 Gerald Emprechtinger</span>
-  </div>
+  <h1>STADIONKARTE 2025/26</h1>
+  <span class="header-copy">&copy; 2026 Gerald Emprechtinger</span>
   <div class="header-meta">12 Vereine</div>
 </header>
 
@@ -382,9 +520,9 @@
   </div>
 
   <!-- MAP -->
-  <div style="position:relative;flex:1;min-height:0;">
+  <div class="map-wrapper tab-active" id="mapWrapper">
     <div id="map" style="width:100%;height:100%;"></div>
-    <div style="position:absolute;bottom:28px;right:10px;z-index:1000;background:rgba(255,255,255,0.92);border-radius:8px;padding:8px 12px;font-size:0.72rem;color:#444;box-shadow:0 2px 8px rgba(0,0,0,0.15);pointer-events:none;line-height:1.8;">
+    <div class="map-legend" style="position:absolute;bottom:28px;right:10px;z-index:1000;background:rgba(255,255,255,0.92);border-radius:8px;padding:8px 12px;font-size:0.72rem;color:#444;box-shadow:0 2px 8px rgba(0,0,0,0.15);pointer-events:none;line-height:1.8;">
       <div style="font-weight:700;margin-bottom:4px;color:#111a14;">Kreisfläche = Kapazität</div>
       <div style="display:flex;align-items:center;gap:6px;">
         <div style="width:20px;height:20px;background:#1a7a3c;border-radius:50%;border:2px solid rgba(255,255,255,0.85);flex-shrink:0;"></div>
@@ -409,6 +547,26 @@
     <div class="info-content" id="infoContent"></div>
   </div>
 </div>
+
+<!-- MOBILE BOTTOM TABS -->
+<nav class="mobile-tabs">
+  <button class="mobile-tab" id="tab-list" onclick="switchTab('list')">
+    <span class="tab-icon">📋</span>
+    <span class="tab-label">Vereine</span>
+  </button>
+  <button class="mobile-tab active" id="tab-map" onclick="switchTab('map')">
+    <span class="tab-icon">🗺️</span>
+    <span class="tab-label">Karte</span>
+  </button>
+  <button class="mobile-tab" id="tab-detail" onclick="switchTab('detail')">
+    <span class="tab-icon">🏟️</span>
+    <span class="tab-label">Details</span>
+  </button>
+  <button class="mobile-tab" id="tab-dist" onclick="switchTab('dist')">
+    <span class="tab-icon">📏</span>
+    <span class="tab-label">Distanz</span>
+  </button>
+</nav>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script>
@@ -677,7 +835,13 @@ function buildList() {
         <div class="item-stadium">${s.stadion}</div>
         <div class="item-cap">⬡ ${s.kapazitaet.toLocaleString('de-AT')} Plätze</div>
       `;
-      item.addEventListener('click', () => selectStadium(s.id));
+      item.addEventListener('click', () => {
+        selectStadium._fromList = true;
+        selectStadium(s.id);
+        if (window.innerWidth <= 768 && typeof switchTab === 'function') {
+          switchTab('map');
+        }
+      });
       listEl.appendChild(item);
     });
 }
@@ -801,10 +965,53 @@ function selectStadium(id) {
     </div>
     <div style="margin-top:1.5rem;">${heimHtml}</div>
   `;
+
+  // On mobile: switch to detail tab (called from popup or info panel click)
+  // List clicks handle their own tab switch
+  if (window.innerWidth <= 768 && typeof switchTab === 'function' && !selectStadium._fromList) {
+    switchTab('detail');
+  }
+  selectStadium._fromList = false;
 }
 
 // Make global for popup button
 window.selectStadium = selectStadium;
+
+// ── MOBILE TAB SWITCHING ─────────────────────────────────────────
+const TABS = {
+  list:   { btn: 'tab-list',   el: '.sidebar',    cls: 'tab-active' },
+  map:    { btn: 'tab-map',    el: '#mapWrapper',  cls: 'tab-active' },
+  detail: { btn: 'tab-detail', el: '.info-panel',  cls: 'tab-active' },
+  dist:   { btn: 'tab-dist',   el: null,           cls: null }        // scrolls to section
+};
+
+let activeTab = 'map';
+
+function switchTab(name) {
+  activeTab = name;
+
+  const isMobile = window.innerWidth <= 768;
+
+  if (isMobile) {
+    // Hide all mobile panels
+    document.querySelector('.sidebar').classList.remove('tab-active');
+    document.getElementById('mapWrapper').classList.remove('tab-active');
+    document.querySelector('.info-panel').classList.remove('tab-active');
+    document.getElementById('distSection').style.display = 'none';
+
+    // Show selected panel
+    if (name === 'list')   document.querySelector('.sidebar').classList.add('tab-active');
+    if (name === 'map')    { document.getElementById('mapWrapper').classList.add('tab-active'); setTimeout(() => map.invalidateSize(), 50); }
+    if (name === 'detail') document.querySelector('.info-panel').classList.add('tab-active');
+    if (name === 'dist')   document.getElementById('distSection').style.display = 'block';
+  }
+
+  // Update tab buttons
+  ['list','map','detail','dist'].forEach(t => {
+    document.getElementById('tab-' + t)?.classList.toggle('active', t === name);
+  });
+}
+window.switchTab = switchTab;
 
 // Initial list build
 buildList();
@@ -974,8 +1181,8 @@ function buildAllDistances(filterId) {
     const key = cacheKey(p.idA, p.idB);
     const drive = driveCache[key];
     const driveCell = drive
-      ? '<td style="padding:5px 8px;text-align:right;color:#555;">' + drive.dur + '</td><td style="padding:5px 8px;text-align:right;color:#888;font-size:.8rem;">' + drive.km + ' km</td>'
-      : '<td style="padding:5px 8px;text-align:right;color:#ccc;font-size:.8rem;">⏳</td><td></td>';
+      ? '<td class="dist-drive-col" style="padding:5px 8px;text-align:right;color:#555;">' + drive.dur + '</td><td class="dist-drive-col" style="padding:5px 8px;text-align:right;color:#888;font-size:.8rem;">' + drive.km + ' km</td>'
+      : '<td class="dist-drive-col" style="padding:5px 8px;text-align:right;color:#ccc;font-size:.8rem;">⏳</td><td class="dist-drive-col"></td>';
     return '<tr style="border-bottom:1px solid #f0f0f0;">' +
     '<td style="color:#aaa;padding:5px 8px;text-align:right;">' + (idx+1) + '</td>' +
     '<td style="padding:5px 8px;">' + p.a + '</td>' +
@@ -990,9 +1197,9 @@ function buildAllDistances(filterId) {
 </script>
 
 <!-- DISTANZ-WIDGET -->
-<section style="background:#fff;border-top:3px solid #1a7a3c;padding:1.2rem 1.5rem;font-family:inherit;">
+<section id="distSection" style="background:#fff;border-top:3px solid #1a7a3c;padding:1.2rem 1.5rem;font-family:inherit;">
   <h2 style="margin:0 0 1.2rem;font-size:1.1rem;color:#111a14;letter-spacing:.05em;text-transform:uppercase;">Stadion-Distanzrechner</h2>
-  <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap;margin-bottom:1.5rem;">
+  <div class="dist-row-top" style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap;margin-bottom:1.5rem;">
     <select id="distA" style="flex:1;min-width:160px;padding:8px 10px;border:1px solid #ccc;border-radius:6px;font-size:.9rem;"></select>
     <span style="font-size:1.1rem;color:#888;">↔</span>
     <select id="distB" style="flex:1;min-width:160px;padding:8px 10px;border:1px solid #ccc;border-radius:6px;font-size:.9rem;"></select>
@@ -1012,8 +1219,8 @@ function buildAllDistances(filterId) {
             <th></th>
             <th style="padding:5px 8px;">Stadion B</th>
             <th style="padding:5px 8px;text-align:right;">Luftlinie</th>
-            <th style="padding:5px 8px;text-align:right;">Fahrzeit</th>
-            <th style="padding:5px 8px;text-align:right;">Strecke</th>
+            <th class="dist-drive-col" style="padding:5px 8px;text-align:right;">Fahrzeit</th>
+            <th class="dist-drive-col" style="padding:5px 8px;text-align:right;">Strecke</th>
           </tr>
         </thead>
         <tbody id="distTable"></tbody>
@@ -1026,6 +1233,12 @@ function buildAllDistances(filterId) {
 buildDistanceSelects();
 buildAllDistances();
 preloadAllDriveTimes();
+
+// Mobile init: hide distSection, show map tab
+if (window.innerWidth <= 768) {
+  document.getElementById('distSection').style.display = 'none';
+}
+
 // Heimstadion beim Start anzeigen
 const riedId = stadien.find(s => s.verein === 'SV Ried').id;
 selectStadium(riedId);
@@ -1035,6 +1248,16 @@ document.getElementById('distA').addEventListener('change', () => {
   buildAllDistances(stadien[idx].id);
 });
 document.getElementById('distB').addEventListener('change', calcDistance);
+
+// Handle orientation change / resize
+window.addEventListener('resize', () => {
+  map.invalidateSize();
+  if (window.innerWidth > 768) {
+    // Restore desktop layout
+    document.querySelector('.sidebar').classList.remove('tab-active');
+    document.getElementById('distSection').style.display = '';
+  }
+});
 </script>
 </body>
 </html>
