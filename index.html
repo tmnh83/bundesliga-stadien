@@ -1,0 +1,1043 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Österreichische Bundesliga – Stadionkarte</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --green: #1a7a3c;
+    --green-dark: #111a14;
+    --panel: #ffffff;
+    --panel2: #f2f7f4;
+    --border: #d4e4da;
+    --text: #1a2b1f;
+    --muted: #6b8070;
+    --accent: #1a7a3c;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--panel2);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+  }
+
+  /* HEADER */
+  header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 0 24px;
+    height: 56px;
+    background: var(--green-dark);
+    border-bottom: 1px solid #0a100c;
+    flex-shrink: 0;
+    z-index: 1000;
+  }
+  .logo-badge {
+    background: var(--green);
+    color: #fff;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 13px;
+    letter-spacing: 1px;
+    padding: 3px 10px 2px;
+    border-radius: 3px;
+  }
+  header h1 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 22px;
+    letter-spacing: 2px;
+    color: #fff;
+  }
+  .header-meta {
+    margin-left: auto;
+    font-size: 12px;
+    color: #7aaa88;
+    letter-spacing: 0.5px;
+  }
+
+  /* LAYOUT */
+  .app-body {
+    display: flex;
+    flex: 1;
+    min-height: 0;
+    overflow: visible;
+  }
+
+  /* SIDEBAR */
+  .sidebar {
+    width: 320px;
+    background: var(--panel);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    max-height: calc(100vh - 56px);
+    flex-shrink: 0;
+  }
+  .sidebar-header {
+    padding: 16px 20px 12px;
+    border-bottom: 1px solid var(--border);
+    background: var(--panel);
+  }
+  .sidebar-header h2 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 16px;
+    letter-spacing: 2px;
+    color: var(--muted);
+    margin-bottom: 10px;
+  }
+  .search-box {
+    width: 100%;
+    background: var(--panel2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 8px 12px;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .search-box:focus { border-color: var(--green); }
+  .search-box::placeholder { color: var(--muted); }
+
+  .stadium-list {
+    overflow-y: auto;
+    flex: 1;
+    padding: 8px 0;
+    background: var(--panel);
+  }
+  .stadium-list::-webkit-scrollbar { width: 4px; }
+  .stadium-list::-webkit-scrollbar-track { background: var(--panel); }
+  .stadium-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  .stadium-item {
+    padding: 12px 20px;
+    cursor: pointer;
+    border-left: 3px solid transparent;
+    transition: all 0.15s;
+    border-bottom: 1px solid var(--border);
+  }
+  .stadium-item:hover { background: #eaf3ee; border-left-color: var(--green); }
+  .stadium-item.active { background: #ddf0e5; border-left-color: var(--green); }
+  .item-club {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 2px;
+  }
+  .item-stadium {
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .item-cap {
+    font-size: 11px;
+    color: var(--accent);
+    margin-top: 3px;
+    font-weight: 500;
+  }
+
+  /* MAP */
+  #map {
+    flex: 1;
+    z-index: 1;
+  }
+
+  /* INFO PANEL */
+  .info-panel {
+    width: 300px;
+    background: var(--panel);
+    border-left: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    max-height: calc(100vh - 56px);
+    flex-shrink: 0;
+    transition: all 0.3s ease;
+  }
+  .info-panel::-webkit-scrollbar { width: 4px; }
+  .info-panel::-webkit-scrollbar-track { background: var(--panel); }
+  .info-panel::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  .info-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: var(--muted);
+    text-align: center;
+    padding: 40px 20px;
+    gap: 12px;
+  }
+  .info-placeholder svg { opacity: 0.3; }
+  .info-placeholder p { font-size: 13px; line-height: 1.6; }
+
+  .info-content { padding: 24px 20px; display: none; }
+  .info-content.visible { display: block; }
+
+  .info-club-tag {
+    display: inline-block;
+    background: var(--green);
+    color: #fff;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 16px;
+    letter-spacing: 1.5px;
+    padding: 4px 10px;
+    border-radius: 4px;
+    margin-bottom: 10px;
+  }
+  .info-stadium-name {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 26px;
+    letter-spacing: 1.5px;
+    line-height: 1.1;
+    color: var(--text);
+    margin-bottom: 6px;
+  }
+  .info-address {
+    font-size: 12px;
+    color: var(--muted);
+    margin-bottom: 20px;
+    line-height: 1.5;
+  }
+
+  .info-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+  .info-stat {
+    background: var(--panel2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .stat-label {
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+  .stat-value {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text);
+  }
+  .stat-value.accent { color: var(--green); }
+
+  .section-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 13px;
+    letter-spacing: 2px;
+    color: var(--muted);
+    margin-bottom: 10px;
+  }
+
+  .oepnv-list {
+    list-style: none;
+    margin-bottom: 20px;
+  }
+  .oepnv-list li {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 12px;
+    line-height: 1.5;
+    color: var(--text);
+  }
+  .oepnv-list li:last-child { border-bottom: none; }
+  .transport-icon {
+    flex-shrink: 0;
+    width: 22px;
+    height: 22px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 700;
+  }
+  .icon-u { background: #1a5fa8; color: #fff; }
+  .icon-s { background: #2e8b57; color: #fff; }
+  .icon-b { background: #c8860a; color: #fff; }
+  .icon-t { background: #9b1f26; color: #fff; }
+  .icon-p { background: #555; color: #fff; }
+
+  .directions-btn {
+    display: block;
+    width: 100%;
+    padding: 12px;
+    background: var(--green);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 16px;
+    letter-spacing: 2px;
+    cursor: pointer;
+    transition: opacity 0.2s;
+    text-align: center;
+    text-decoration: none;
+    margin-top: 8px;
+  }
+  .directions-btn:hover { opacity: 0.85; }
+  .anreise-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .anreise-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 10px 6px;
+    border-radius: 8px;
+    text-decoration: none;
+    font-size: .72rem;
+    font-weight: 700;
+    letter-spacing: .03em;
+    transition: opacity 0.2s, transform 0.15s;
+    text-align: center;
+    line-height: 1.2;
+  }
+  .anreise-btn:hover { opacity: 0.85; transform: translateY(-1px); }
+  .anreise-btn .anreise-icon { font-size: 1.3rem; }
+  .anreise-btn.auto   { background: #1a7a3c; color: #fff; }
+  .anreise-btn.oepnv  { background: #2980b9; color: #fff; }
+  .anreise-btn.zug    { background: #c0392b; color: #fff; }
+
+  /* Leaflet popup override */
+  .leaflet-popup-content-wrapper {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.12);
+    color: var(--text);
+  }
+  .leaflet-popup-tip { background: #fff; }
+  .leaflet-popup-content { margin: 14px 16px; }
+  .popup-club { font-size: 10px; color: var(--green); font-weight: 700; letter-spacing: 1px; text-transform: uppercase; }
+  .popup-name { font-family: 'Bebas Neue', sans-serif; font-size: 18px; letter-spacing: 1px; color: var(--text); margin: 2px 0 6px; }
+  .popup-cap { font-size: 11px; color: var(--muted); }
+  .popup-detail-btn {
+    display: inline-block;
+    margin-top: 8px;
+    padding: 5px 12px;
+    background: var(--green);
+    color: #fff;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    font-family: 'DM Sans', sans-serif;
+  }
+
+  /* Custom marker */
+  .custom-marker {
+    width: 32px;
+    height: 32px;
+    background: #1a7a3c;
+    border: 2px solid #fff;
+    border-radius: 50% 50% 50% 0;
+    transform: rotate(-45deg);
+    box-shadow: 0 3px 12px rgba(0,0,0,0.3);
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo-badge">BUNDESLIGA</div>
+  <div style="display:flex;align-items:baseline;gap:0.75rem;flex-wrap:wrap;">
+    <h1>STADIONKARTE 2025/26</h1>
+    <span style="font-size:0.72rem;color:rgba(255,255,255,0.55);white-space:nowrap;">&copy; 2026 Gerald Emprechtinger</span>
+  </div>
+  <div class="header-meta">12 Vereine</div>
+</header>
+
+<div class="app-body">
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="sidebar-header">
+      <h2>Alle Stadien</h2>
+      <input class="search-box" type="text" id="searchInput" placeholder="Verein oder Stadion suchen…" />
+    </div>
+    <div class="stadium-list" id="stadiumList"></div>
+  </div>
+
+  <!-- MAP -->
+  <div style="position:relative;flex:1;min-height:0;">
+    <div id="map" style="width:100%;height:100%;"></div>
+    <div style="position:absolute;bottom:28px;right:10px;z-index:1000;background:rgba(255,255,255,0.92);border-radius:8px;padding:8px 12px;font-size:0.72rem;color:#444;box-shadow:0 2px 8px rgba(0,0,0,0.15);pointer-events:none;line-height:1.8;">
+      <div style="font-weight:700;margin-bottom:4px;color:#111a14;">Kreisfläche = Kapazität</div>
+      <div style="display:flex;align-items:center;gap:6px;">
+        <div style="width:20px;height:20px;background:#1a7a3c;border-radius:50%;border:2px solid rgba(255,255,255,0.85);flex-shrink:0;"></div>
+        <span>~28.000 Plätze</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;">
+        <div style="width:13px;height:13px;background:#1a7a3c;border-radius:50%;border:2px solid rgba(255,255,255,0.85);flex-shrink:0;margin-left:3px;"></div>
+        <span>~5.000 Plätze</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- INFO PANEL -->
+  <div class="info-panel" id="infoPanel">
+    <div class="info-placeholder" id="infoPlaceholder">
+      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/>
+        <circle cx="12" cy="9" r="2.5"/>
+      </svg>
+      <p>Klicke auf ein Stadion in der Karte oder in der Liste für Details &amp; ÖPNV-Verbindungen.</p>
+    </div>
+    <div class="info-content" id="infoContent"></div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+const stadien = [
+  {
+    id: 1,
+    verein: "FK Austria Wien",
+    stadion: "Generali Arena",
+    adresse: "Horrplatz 1, 1100 Wien",
+    kapazitaet: 15600,
+    baujahr: "1925, Umbau 2016–2018",
+    lat: 48.16233,
+    lng: 16.38717,
+    oepnv: [
+      { typ: "U", linie: "U1", text: "Station Reumannplatz, dann Bus 15A Richtung Meidling" },
+      { typ: "T", linie: "62", text: "Straßenbahn 62, Station Kliebergasse" },
+      { typ: "B", linie: "7A", text: "Bus 7A, Station Fischhof / Generali Arena" }
+    ]
+  },
+  {
+    id: 2,
+    verein: "SK Rapid Wien",
+    stadion: "Allianz Stadion",
+    adresse: "Gerhard-Hanappi-Platz 1, 1140 Wien",
+    kapazitaet: 28600,
+    baujahr: "2016",
+    lat: 48.19806,
+    lng: 16.26528,
+    oepnv: [
+      { typ: "U", linie: "U4", text: "Endstation Hütteldorf, 5 Min. Fußweg" },
+      { typ: "S", linie: "S50", text: "S-Bahn S50, Bahnhof Hütteldorf" },
+      { typ: "T", linie: "49", text: "Straßenbahn 49, Station Deutschordenstraße (direkt am Stadion)" }
+    ]
+  },
+  {
+    id: 3,
+    verein: "Red Bull Salzburg",
+    stadion: "Red Bull Arena",
+    adresse: "Stadionstraße 2/3, 5071 Wals-Siezenheim",
+    kapazitaet: 17218,
+    baujahr: "2003, Umbau 2008",
+    lat: 47.81681,
+    lng: 12.99931,
+    oepnv: [
+      { typ: "B", linie: "2", text: "OBus Linie 2, Station Red Bull Arena" },
+      { typ: "B", linie: "180", text: "Bus 180 vom HBF Salzburg (Spieltage)" },
+      { typ: "P", linie: "P", text: "Großes Parkplatzangebot direkt am Stadion" }
+    ]
+  },
+  {
+    id: 4,
+    verein: "LASK",
+    stadion: "Raiffeisen Arena",
+    adresse: "Helmut-Köglberger-Platz 1, 4020 Linz",
+    kapazitaet: 19080,
+    baujahr: "2023",
+    lat: 48.29372,
+    lng: 14.27658,
+    oepnv: [
+      { typ: "T", linie: "3", text: "Straßenbahn Linie 3, Endstation Trauner Kreuzung" },
+      { typ: "B", linie: "33", text: "Bus 33 ab Linz HBF Richtung Leonding" },
+      { typ: "P", linie: "P", text: "Parkhaus am Stadion verfügbar" }
+    ]
+  },
+  {
+    id: 5,
+    verein: "Sturm Graz",
+    stadion: "Merkur Versicherung Arena",
+    adresse: "Stadionplatz 1, 8042 Graz",
+    kapazitaet: 16364,
+    baujahr: "1997",
+    lat: 47.04685,
+    lng: 15.45456,
+    oepnv: [
+      { typ: "T", linie: "4", text: "Straßenbahn Linie 4, Station Puntigam" },
+      { typ: "T", linie: "5", text: "Straßenbahn Linie 5, Station Liebenauer Tangente" },
+      { typ: "B", linie: "65", text: "Bus 65, Station Stadion Liebenau" }
+    ]
+  },
+  {
+    id: 6,
+    verein: "Wolfsberger AC",
+    stadion: "Lavanttal Arena",
+    adresse: "Don-Bosco-Weg 1, 9400 Wolfsberg",
+    kapazitaet: 8100,
+    baujahr: "1984, Tribünenausbau 1988",
+    lat: 46.82640,
+    lng: 14.85180,
+    oepnv: [
+      { typ: "S", linie: "S6", text: "S-Bahn S6, Bahnhof Wolfsberg (15 Min. Fußweg)" },
+      { typ: "B", linie: "5", text: "Stadtbus Wolfsberg, Linie 5 zum Stadion" },
+      { typ: "P", linie: "P", text: "Ausreichend Parkplätze vorhanden" }
+    ]
+  },
+  {
+    id: 7,
+    verein: "GAK 1902",
+    stadion: "Merkur Arena",
+    adresse: "Ivica-Osim-Platz 1, 8041 Graz",
+    kapazitaet: 16364,
+    baujahr: "1997",
+    lat: 47.04543,
+    lng: 15.45456,
+    oepnv: [
+      { typ: "T", linie: "4", text: "Straßenbahn Linie 4, Haltestelle Stadion Liebenau (direkt am Stadion)" },
+      { typ: "T", linie: "5", text: "Straßenbahn Linie 5, Haltestelle Liebenauer Tangente" },
+      { typ: "P", linie: "P", text: "Tiefgarage im Stadion sowie P+R MURPARK in der Nähe" }
+    ]
+  },
+  {
+    id: 8,
+    verein: "TSV Hartberg",
+    stadion: "Profertil Arena",
+    adresse: "Otto-Gerlitz-Platz 2, 8230 Hartberg",
+    kapazitaet: 5024,
+    baujahr: "1946, Umbau 2025",
+    lat: 47.28097,
+    lng: 15.97722,
+    oepnv: [
+      { typ: "S", linie: "S31", text: "S-Bahn S31, Bahnhof Hartberg (10 Min. Fußweg)" },
+      { typ: "B", linie: "606", text: "Regionalbus 606 aus Graz, Haltestelle Hartberg Bahnhof" },
+      { typ: "P", linie: "P", text: "Parkplätze am und beim Stadion" }
+    ]
+  },
+  {
+    id: 9,
+    verein: "WSG Tirol",
+    stadion: "Tivoli Stadion Tirol",
+    adresse: "Stadionstraße 1, 6020 Innsbruck",
+    kapazitaet: 15200,
+    baujahr: "2000",
+    lat: 47.25597,
+    lng: 11.41078,
+    oepnv: [
+      { typ: "T", linie: "1", text: "Straßenbahn Linie 1, Station Bergisel" },
+      { typ: "B", linie: "J", text: "Bus J, Station Tivoli / Stadion" },
+      { typ: "S", linie: "S3", text: "S-Bahn S3/S4, Bahnhof Innsbruck HBF (20 Min. zu Fuß)" }
+    ]
+  },
+  {
+    id: 10,
+    verein: "SCR Altach",
+    stadion: "Stadion Schnabelholz",
+    adresse: "Rheinstraße 4, 6844 Altach",
+    kapazitaet: 8200,
+    baujahr: "1990, Südtribüne 2018, Nordtribüne 2019",
+    lat: 47.35364,
+    lng: 9.63719,
+    oepnv: [
+      { typ: "S", linie: "S3", text: "S-Bahn S3, Bahnhof Altach (Shuttlebus zum Stadion am Spieltag)" },
+      { typ: "B", linie: "Shuttle", text: "Gratis-Shuttlebus Bahnhof Altach ↔ Stadion (Tages-/Dauerkarte gilt als Ticket)" },
+      { typ: "P", linie: "P", text: "Parkplätze direkt beim Stadion, Zufahrt A14 Ausfahrt Altach" }
+    ]
+  },
+  {
+    id: 11,
+    verein: "FC Blau-Weiß Linz",
+    stadion: "Hofmann Personal Stadion",
+    adresse: "Straßerau 3, 4020 Linz",
+    kapazitaet: 5595,
+    baujahr: "2023",
+    lat: 48.31639,
+    lng: 14.29881,
+    oepnv: [
+      { typ: "T", linie: "1/2/3/4", text: "Straßenbahn, Haltestelle Hauptplatz (ca. 10 Min. Fußweg)" },
+      { typ: "T", linie: "1/2", text: "Straßenbahn, Haltestellen Peuerbachstraße / Linke Brückenstraße" },
+      { typ: "B", linie: "12/25", text: "Bus, Haltestellen Donauparkstadion / Parkbad / Heilhamer Weg" }
+    ]
+  },
+  {
+    id: 12,
+    verein: "SV Ried",
+    stadion: "BWT Oberösterreichische Arena",
+    adresse: "Volksfestplatz 1, 4910 Ried im Innkreis",
+    kapazitaet: 7336,
+    baujahr: "2003",
+    lat: 48.20781,
+    lng: 13.47856,
+    oepnv: [
+      { typ: "S", linie: "S4", text: "S-Bahn S4, Bahnhof Ried im Innkreis (15 Min. Fußweg)" },
+      { typ: "B", linie: "430", text: "Regionalbus 430 ab Wels, Haltestelle Ried Bahnhof" },
+      { typ: "P", linie: "P", text: "Parkplätze am Volksfestplatz direkt beim Stadion" }
+    ]
+  }
+];
+
+// Transport-Typ Config
+const transportConfig = {
+  U: { icon: 'U', cls: 'icon-u' },
+  S: { icon: 'S', cls: 'icon-s' },
+  B: { icon: 'B', cls: 'icon-b' },
+  T: { icon: 'T', cls: 'icon-t' },
+  P: { icon: 'P', cls: 'icon-p' }
+};
+
+// Init Map
+const map = L.map('map', {
+  center: [47.6, 13.8],
+  zoom: 7,
+  zoomControl: true
+});
+
+L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+  attribution: 'Tiles © Esri — Source: Esri, Earthstar Geographics',
+  maxZoom: 19
+}).addTo(map);
+
+L.tileLayer('https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', {
+  maxZoom: 19,
+  opacity: 1
+}).addTo(map);
+
+// Custom marker icon
+// Capacity-scaled circle marker
+// Area proportional to capacity: r = scale * sqrt(capacity)
+const CAP_MIN = Math.min(...stadien.map(s => s.kapazitaet));
+const CAP_MAX = Math.max(...stadien.map(s => s.kapazitaet));
+const R_MIN = 10, R_MAX = 34;
+
+function capToRadius(cap) {
+  // Area-proportional scaling
+  const t = (Math.sqrt(cap) - Math.sqrt(CAP_MIN)) / (Math.sqrt(CAP_MAX) - Math.sqrt(CAP_MIN));
+  return Math.round(R_MIN + t * (R_MAX - R_MIN));
+}
+
+function createMarkerIcon(active = false, cap = 10000) {
+  const r = capToRadius(cap);
+  const size = r * 2;
+  const bg = active ? '#fff' : '#1a7a3c';
+  const border = active ? '3px solid #1a7a3c' : '2.5px solid #fff';
+  const shadow = active ? '0 0 0 3px rgba(26,122,60,0.6), 0 3px 10px rgba(0,0,0,0.6)' : '0 2px 8px rgba(0,0,0,0.6)';
+  return L.divIcon({
+    html: `<div style="
+      width:${size}px;
+      height:${size}px;
+      background:${bg};
+      border:${border};
+      border-radius:50%;
+      box-shadow:${shadow};
+      transition:all 0.25s;
+      display:flex;align-items:center;justify-content:center;
+    "></div>`,
+    className: '',
+    iconSize: [size, size],
+    iconAnchor: [r, r]
+  });
+}
+
+let activeMarkerId = null;
+const markers = {};
+
+// Build sidebar list
+const listEl = document.getElementById('stadiumList');
+const searchInput = document.getElementById('searchInput');
+
+function buildList(filter = '') {
+  listEl.innerHTML = '';
+  stadien
+    .filter(s =>
+      s.verein.toLowerCase().includes(filter.toLowerCase()) ||
+      s.stadion.toLowerCase().includes(filter.toLowerCase())
+    )
+    .sort((a, b) => a.verein.localeCompare(b.verein, 'de'))
+    .forEach(s => {
+      const item = document.createElement('div');
+      item.className = 'stadium-item' + (activeMarkerId === s.id ? ' active' : '');
+      item.dataset.id = s.id;
+      item.innerHTML = `
+        <div class="item-club">${s.verein}</div>
+        <div class="item-stadium">${s.stadion}</div>
+        <div class="item-cap">⬡ ${s.kapazitaet.toLocaleString('de-AT')} Plätze</div>
+      `;
+      item.addEventListener('click', () => selectStadium(s.id));
+      listEl.appendChild(item);
+    });
+}
+
+searchInput.addEventListener('input', e => buildList(e.target.value));
+
+// Add markers to map
+stadien.forEach(s => {
+  const marker = L.marker([s.lat, s.lng], { icon: createMarkerIcon(false, s.kapazitaet) }).addTo(map);
+  marker.bindPopup(`
+    <div class="popup-club">${s.verein}</div>
+    <div class="popup-name">${s.stadion}</div>
+    <div class="popup-cap">⬡ ${s.kapazitaet.toLocaleString('de-AT')} Plätze</div>
+    <button class="popup-detail-btn" onclick="selectStadium(${s.id})">Details &amp; ÖPNV →</button>
+  `, { maxWidth: 220 });
+  marker.on('click', () => selectStadium(s.id));
+  markers[s.id] = marker;
+});
+
+// Select stadium
+function selectStadium(id) {
+  const s = stadien.find(x => x.id === id);
+  if (!s) return;
+
+  // Reset previous marker
+  if (activeMarkerId && markers[activeMarkerId]) {
+    const prevStadion = stadien.find(x => x.id === activeMarkerId);
+    markers[activeMarkerId].setIcon(createMarkerIcon(false, prevStadion ? prevStadion.kapazitaet : 10000));
+  }
+
+  activeMarkerId = id;
+  markers[id].setIcon(createMarkerIcon(true, s.kapazitaet));
+  map.flyTo([s.lat, s.lng], 16, { duration: 1.2 });
+
+  // Sync distance widget
+  const selA = document.getElementById('distA');
+  if (selA) {
+    const idx = stadien.findIndex(x => x.id === id);
+    selA.selectedIndex = idx;
+    calcDistance();
+    buildAllDistances(id);
+  }
+
+  // Update sidebar active state
+  buildList(searchInput.value);
+
+  // Update info panel
+  // Heimstärke block
+  const hd = getHeimData(s.verein);
+  let heimHtml = '';
+  if (hd) {
+    const diff = hd.heimPts - hd.auswPts;
+    const diffStr = diff > 0 ? `+${diff}` : `${diff}`;
+    const diffColor = diff > 0 ? '#1a7a3c' : diff < 0 ? '#c0392b' : '#888';
+    const label = diff > 3 ? '🏠 Starke Heimmannschaft' : diff < -3 ? '✈️ Besser auswärts' : '⚖️ Ausgeglichen';
+    heimHtml = `
+      <div class="section-title">Heimstärke (20. Spieltag)</div>
+      <div style="padding:0 1.2rem 1rem;display:flex;flex-direction:column;gap:10px;">
+        <div>
+          <div style="font-size:.75rem;color:#888;margin-bottom:4px;">🏠 Heim (${hd.heimSp} Spiele)</div>
+          ${heimstaerkeBar(hd.heimPts, hd.heimSp, '#1a7a3c')}
+        </div>
+        <div>
+          <div style="font-size:.75rem;color:#888;margin-bottom:4px;">✈️ Auswärts (${hd.auswSp} Spiele)</div>
+          ${heimstaerkeBar(hd.auswPts, hd.auswSp, '#e67e22')}
+        </div>
+        <div style="font-size:.8rem;padding:6px 10px;background:#f8f8f8;border-radius:6px;border-left:3px solid ${diffColor};">
+          ${label} &nbsp;·&nbsp; <span style="color:${diffColor};font-weight:700;">${diffStr} Punkte</span> Differenz
+        </div>
+        <div style="font-size:.7rem;color:#bbb;text-align:right;padding-top:4px;">Stand: 23.02.2026 · 20. Spieltag</div>
+      </div>`;
+  }
+
+  const oepnvHtml = s.oepnv.map(o => {
+    const cfg = transportConfig[o.typ] || transportConfig.B;
+    return `<li>
+      <span class="transport-icon ${cfg.cls}">${cfg.icon}</span>
+      <span><strong>${o.linie}:</strong> ${o.text}</span>
+    </li>`;
+  }).join('');
+
+  document.getElementById('infoPlaceholder').style.display = 'none';
+  const content = document.getElementById('infoContent');
+  content.classList.add('visible');
+  content.innerHTML = `
+    <div class="info-club-tag">${s.verein}</div>
+    <div class="info-stadium-name">${s.stadion}</div>
+    <div class="info-address">${s.adresse}</div>
+    <div class="info-grid">
+      <div class="info-stat">
+        <div class="stat-label">Kapazität</div>
+        <div class="stat-value accent">${s.kapazitaet.toLocaleString('de-AT')}</div>
+      </div>
+      <div class="info-stat">
+        <div class="stat-label">ÖPNV</div>
+        <div class="stat-value">${s.oepnv.length} Linien</div>
+      </div>
+      ${s.baujahr ? `<div class="info-stat" style="grid-column:1/-1;">
+        <div class="stat-label">Baujahr / Renovierung</div>
+        <div class="stat-value" style="font-size:14px;">${s.baujahr}</div>
+      </div>` : ''}
+    </div>
+    <div class="section-title">ÖPNV Anbindung</div>
+    <ul class="oepnv-list">${oepnvHtml}</ul>
+    <div style="font-size:.75rem;color:#888;margin:1rem 0 0;font-weight:600;text-transform:uppercase;letter-spacing:.05em;">Anreise planen</div>
+    <div class="anreise-grid">
+      <a class="anreise-btn auto"
+         href="https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(s.adresse)}&travelmode=driving"
+         target="_blank">
+        <span class="anreise-icon">🚗</span>Auto<br><span style="font-weight:400;font-size:.68rem;">Google Maps</span>
+      </a>
+      <a class="anreise-btn oepnv"
+         href="https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(s.adresse)}&travelmode=transit"
+         target="_blank">
+        <span class="anreise-icon">🚌</span>Öffis<br><span style="font-weight:400;font-size:.68rem;">Google Maps</span>
+      </a>
+      <a class="anreise-btn zug"
+         href="https://fahrplan.oebb.at/bin/query.exe/dn?Z=${encodeURIComponent(s.stadion + ', ' + s.adresse.split(',').slice(-1)[0].trim())}&START=1"
+         target="_blank">
+        <span class="anreise-icon">🚂</span>Zug<br><span style="font-weight:400;font-size:.68rem;">ÖBB</span>
+      </a>
+    </div>
+    <div style="margin-top:1.5rem;">${heimHtml}</div>
+  `;
+}
+
+// Make global for popup button
+window.selectStadium = selectStadium;
+
+// Initial list build
+buildList();
+
+// ── DISTANZ-WIDGET ──────────────────────────────────────────────
+function haversine(lat1, lng1, lat2, lng2) {
+  const R = 6371;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLng = (lng2 - lng1) * Math.PI / 180;
+  const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180) * Math.cos(lat2*Math.PI/180) * Math.sin(dLng/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+function buildDistanceSelects() {
+  const selA = document.getElementById('distA');
+  const selB = document.getElementById('distB');
+  stadien.forEach((s, i) => {
+    selA.innerHTML += `<option value="${i}">${s.verein}</option>`;
+    selB.innerHTML += `<option value="${i}">${s.verein}</option>`;
+  });
+  selB.selectedIndex = 1;
+  calcDistance();
+}
+
+function calcDistance() {
+  const a = stadien[document.getElementById('distA').value];
+  const b = stadien[document.getElementById('distB').value];
+  const km = haversine(a.lat, a.lng, b.lat, b.lng);
+  const key = cacheKey(a.id, b.id);
+  const cached = driveCache[key];
+  const driveEl = document.getElementById('distDrive');
+  if (cached) {
+    document.getElementById('distResult').textContent = km.toFixed(1) + ' km';
+    driveEl.textContent = cached.dur + '  |  ' + cached.km + ' km Fahrtstrecke';
+    driveEl.style.color = '#1a7a3c';
+  } else {
+    document.getElementById('distResult').textContent = km.toFixed(1) + ' km';
+    driveEl.textContent = '⏳ Fahrzeit wird geladen…';
+    driveEl.style.color = '#888';
+    fetchDriveTime(a, b, key);
+  }
+}
+
+function cacheKey(idA, idB) {
+  return [idA, idB].sort().join('_');
+}
+
+const driveCache = {};
+
+// ── HEIMSTÄRKE-DATEN (Stand: 20. Spieltag 2025/26, Quelle: bundesliga.at) ──
+const heimData = {
+  // key = verein name (matched to stadien array)
+  'FC Red Bull Salzburg':       { heimPts: 17, auswPts: 19, heimSp: 10, auswSp: 10 },
+  'SK Puntigamer Sturm Graz':   { heimPts: 13, auswPts: 21, heimSp: 10, auswSp: 10 },
+  'LASK':                       { heimPts: 19, auswPts: 14, heimSp: 10, auswSp: 10 },
+  'FK Austria Wien':            { heimPts: 16, auswPts: 16, heimSp: 10, auswSp: 10 },
+  'TSV Hartberg':               { heimPts: 15, auswPts: 16, heimSp: 10, auswSp: 10 },
+  'SK Rapid Wien':              { heimPts: 14, auswPts: 15, heimSp: 10, auswSp: 10 },
+  'SV Ried':                    { heimPts: 15, auswPts: 13, heimSp: 10, auswSp: 10 },
+  'SCR Altach':                 { heimPts: 19, auswPts:  9, heimSp: 10, auswSp: 10 },
+  'Wolfsberger AC':             { heimPts: 14, auswPts: 11, heimSp: 10, auswSp: 10 },
+  'WSG Tirol':                  { heimPts: 15, auswPts: 10, heimSp: 10, auswSp: 10 },
+  'GAK 1902':                   { heimPts: 11, auswPts:  6, heimSp: 10, auswSp: 10 },
+  'FC Blau-Weiß Linz':          { heimPts: 10, auswPts:  4, heimSp: 10, auswSp: 10 },
+};
+
+function getHeimData(verein) {
+  // fuzzy match
+  for (const key of Object.keys(heimData)) {
+    if (verein.includes(key) || key.includes(verein) ||
+        verein.replace('SK Puntigamer ', '').includes(key.replace('SK Puntigamer ', '')) ||
+        verein.replace('TSV Egger Glas ', '') === key.replace('TSV ', '') ) {
+      return heimData[key];
+    }
+  }
+  // direct lookup
+  return heimData[verein] || null;
+}
+
+function heimstaerkeBar(pts, sp, color) {
+  const pct = sp > 0 ? Math.round((pts / (sp * 3)) * 100) : 0;
+  return `<div style="display:flex;align-items:center;gap:6px;">
+    <div style="flex:1;background:#f0f0f0;border-radius:4px;height:8px;overflow:hidden;">
+      <div style="width:${pct}%;background:${color};height:100%;border-radius:4px;transition:width 0.4s;"></div>
+    </div>
+    <span style="font-size:.78rem;font-weight:700;color:${color};min-width:28px;">${pts} Pts</span>
+    <span style="font-size:.72rem;color:#aaa;">(${pct}%)</span>
+  </div>`;
+}
+
+
+async function fetchDriveTime(a, b, key) {
+  try {
+    const url = `https://router.project-osrm.org/route/v1/driving/${a.lng},${a.lat};${b.lng},${b.lat}?overview=false`;
+    const res = await fetch(url);
+    const data = await res.json();
+    if (data.routes && data.routes[0]) {
+      const secs = data.routes[0].duration;
+      const meters = data.routes[0].distance;
+      const h = Math.floor(secs / 3600);
+      const m = Math.round((secs % 3600) / 60);
+      const durStr = h > 0 ? h + ' Std. ' + m + ' Min.' : m + ' Min.';
+      const kmStr = (meters / 1000).toFixed(0);
+      driveCache[key] = { dur: '🚗 ' + durStr, km: kmStr };
+      // Refresh display if still the same pair selected
+      const curA = stadien[document.getElementById('distA').value];
+      const curB = stadien[document.getElementById('distB').value];
+      if (cacheKey(curA.id, curB.id) === key) {
+        document.getElementById('distDrive').textContent = driveCache[key].dur + '  |  ' + driveCache[key].km + ' km Fahrtstrecke';
+        document.getElementById('distDrive').style.color = '#1a7a3c';
+      }
+    }
+  } catch(e) {
+    const driveEl = document.getElementById('distDrive');
+    if (driveEl) { driveEl.textContent = 'Fahrzeit nicht verfügbar'; driveEl.style.color = '#aaa'; }
+  }
+}
+
+// Preload all drive times in background
+async function preloadAllDriveTimes() {
+  for (let i = 0; i < stadien.length; i++) {
+    for (let j = i+1; j < stadien.length; j++) {
+      const key = cacheKey(stadien[i].id, stadien[j].id);
+      if (!driveCache[key]) {
+        await fetchDriveTime(stadien[i], stadien[j], key);
+        await new Promise(r => setTimeout(r, 150)); // throttle OSRM requests
+      }
+    }
+  }
+  // Rebuild table with full data once loaded
+  const selA = document.getElementById('distA');
+  if (selA) {
+    const idx = parseInt(selA.value);
+    buildAllDistances(stadien[idx] ? stadien[idx].id : undefined);
+  }
+}
+
+function buildAllDistances(filterId) {
+  const pairs = [];
+  if (filterId !== undefined) {
+    // Only distances from selected stadium to all others
+    const base = stadien.find(x => x.id === filterId);
+    stadien.filter(x => x.id !== filterId).forEach(s => {
+      pairs.push({ a: base.verein, b: s.verein, idA: base.id, idB: s.id, km: haversine(base.lat, base.lng, s.lat, s.lng) });
+    });
+  } else {
+    for (let i = 0; i < stadien.length; i++) {
+      for (let j = i+1; j < stadien.length; j++) {
+        pairs.push({
+          a: stadien[i].verein, b: stadien[j].verein,
+          idA: stadien[i].id, idB: stadien[j].id,
+          km: haversine(stadien[i].lat, stadien[i].lng, stadien[j].lat, stadien[j].lng)
+        });
+      }
+    }
+  }
+  pairs.sort((x, y) => y.km - x.km);
+  // Update summary label
+  const summary = document.getElementById('distSummary');
+  if (summary) {
+    summary.textContent = filterId !== undefined
+      ? 'Distanzen von ' + stadien.find(x => x.id === filterId).verein + ' (größte → kleinste)'
+      : 'Alle Distanzen (größte → kleinste)';
+  }
+  const tbody = document.getElementById('distTable');
+  tbody.innerHTML = pairs.map((p, idx) => {
+    const key = cacheKey(p.idA, p.idB);
+    const drive = driveCache[key];
+    const driveCell = drive
+      ? '<td style="padding:5px 8px;text-align:right;color:#555;">' + drive.dur + '</td><td style="padding:5px 8px;text-align:right;color:#888;font-size:.8rem;">' + drive.km + ' km</td>'
+      : '<td style="padding:5px 8px;text-align:right;color:#ccc;font-size:.8rem;">⏳</td><td></td>';
+    return '<tr style="border-bottom:1px solid #f0f0f0;">' +
+    '<td style="color:#aaa;padding:5px 8px;text-align:right;">' + (idx+1) + '</td>' +
+    '<td style="padding:5px 8px;">' + p.a + '</td>' +
+    '<td style="padding:5px 8px;color:#aaa;text-align:center;">↔</td>' +
+    '<td style="padding:5px 8px;">' + p.b + '</td>' +
+    '<td style="padding:5px 8px;text-align:right;font-weight:700;color:#1a7a3c;">' + p.km.toFixed(1) + ' km</td>' +
+    driveCell +
+    '</tr>';
+  }).join('');
+}
+
+</script>
+
+<!-- DISTANZ-WIDGET -->
+<section style="background:#fff;border-top:3px solid #1a7a3c;padding:2rem 1.5rem;font-family:inherit;">
+  <h2 style="margin:0 0 1.2rem;font-size:1.1rem;color:#111a14;letter-spacing:.05em;text-transform:uppercase;">Stadion-Distanzrechner</h2>
+  <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap;margin-bottom:1.5rem;">
+    <select id="distA" style="flex:1;min-width:160px;padding:8px 10px;border:1px solid #ccc;border-radius:6px;font-size:.9rem;"></select>
+    <span style="font-size:1.1rem;color:#888;">↔</span>
+    <select id="distB" style="flex:1;min-width:160px;padding:8px 10px;border:1px solid #ccc;border-radius:6px;font-size:.9rem;"></select>
+    <div style="display:flex;flex-direction:column;gap:4px;">
+      <div style="font-size:1.5rem;font-weight:700;color:#1a7a3c;white-space:nowrap;" id="distResult">– km Luftlinie</div>
+      <div style="font-size:.9rem;color:#888;white-space:nowrap;" id="distDrive">⏳ Fahrzeiten werden geladen…</div>
+    </div>
+  </div>
+  <details open>
+    <summary id="distSummary" style="cursor:pointer;font-size:.9rem;font-weight:600;color:#1a7a3c;margin-bottom:.8rem;">Alle Distanzen (größte → kleinste)</summary>
+    <div style="overflow-x:auto;margin-top:.8rem;">
+      <table style="width:100%;border-collapse:collapse;font-size:.85rem;">
+        <thead>
+          <tr style="border-bottom:2px solid #1a7a3c;color:#555;text-align:left;">
+            <th style="padding:5px 8px;">#</th>
+            <th style="padding:5px 8px;">Stadion A</th>
+            <th></th>
+            <th style="padding:5px 8px;">Stadion B</th>
+            <th style="padding:5px 8px;text-align:right;">Luftlinie</th>
+            <th style="padding:5px 8px;text-align:right;">Fahrzeit</th>
+            <th style="padding:5px 8px;text-align:right;">Strecke</th>
+          </tr>
+        </thead>
+        <tbody id="distTable"></tbody>
+      </table>
+    </div>
+  </details>
+</section>
+
+<script>
+buildDistanceSelects();
+buildAllDistances();
+preloadAllDriveTimes();
+document.getElementById('distA').addEventListener('change', () => {
+  calcDistance();
+  const idx = parseInt(document.getElementById('distA').value);
+  buildAllDistances(stadien[idx].id);
+});
+document.getElementById('distB').addEventListener('change', calcDistance);
+</script>
+</body>
+</html>
