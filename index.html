@@ -83,7 +83,7 @@
     flex-shrink: 0;
   }
   .sidebar-header {
-    padding: 16px 20px 12px;
+    padding: 12px 20px 10px;
     border-bottom: 1px solid var(--border);
     background: var(--panel);
   }
@@ -377,7 +377,6 @@
   <div class="sidebar">
     <div class="sidebar-header">
       <h2>Alle Stadien</h2>
-      <input class="search-box" type="text" id="searchInput" placeholder="Verein oder Stadion suchen…" />
     </div>
     <div class="stadium-list" id="stadiumList"></div>
   </div>
@@ -663,15 +662,11 @@ const markers = {};
 
 // Build sidebar list
 const listEl = document.getElementById('stadiumList');
-const searchInput = document.getElementById('searchInput');
 
-function buildList(filter = '') {
+function buildList() {
   listEl.innerHTML = '';
   stadien
-    .filter(s =>
-      s.verein.toLowerCase().includes(filter.toLowerCase()) ||
-      s.stadion.toLowerCase().includes(filter.toLowerCase())
-    )
+    .slice()
     .sort((a, b) => a.verein.localeCompare(b.verein, 'de'))
     .forEach(s => {
       const item = document.createElement('div');
@@ -687,9 +682,8 @@ function buildList(filter = '') {
     });
 }
 
-searchInput.addEventListener('input', e => buildList(e.target.value));
-
-// Add markers to map
+// Initial list build
+buildList();
 stadien.forEach(s => {
   const marker = L.marker([s.lat, s.lng], { icon: createMarkerIcon(false, s.kapazitaet) }).addTo(map);
   marker.bindPopup(`
@@ -727,7 +721,7 @@ function selectStadium(id) {
   }
 
   // Update sidebar active state
-  buildList(searchInput.value);
+  buildList();
 
   // Update info panel
   // Heimstärke block
@@ -996,7 +990,7 @@ function buildAllDistances(filterId) {
 </script>
 
 <!-- DISTANZ-WIDGET -->
-<section style="background:#fff;border-top:3px solid #1a7a3c;padding:2rem 1.5rem;font-family:inherit;">
+<section style="background:#fff;border-top:3px solid #1a7a3c;padding:1.2rem 1.5rem;font-family:inherit;">
   <h2 style="margin:0 0 1.2rem;font-size:1.1rem;color:#111a14;letter-spacing:.05em;text-transform:uppercase;">Stadion-Distanzrechner</h2>
   <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap;margin-bottom:1.5rem;">
     <select id="distA" style="flex:1;min-width:160px;padding:8px 10px;border:1px solid #ccc;border-radius:6px;font-size:.9rem;"></select>
@@ -1032,6 +1026,9 @@ function buildAllDistances(filterId) {
 buildDistanceSelects();
 buildAllDistances();
 preloadAllDriveTimes();
+// Heimstadion beim Start anzeigen
+const riedId = stadien.find(s => s.verein === 'SV Ried').id;
+selectStadium(riedId);
 document.getElementById('distA').addEventListener('change', () => {
   calcDistance();
   const idx = parseInt(document.getElementById('distA').value);
