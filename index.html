@@ -127,12 +127,12 @@
   .stadium-item {
     padding: 12px 20px;
     cursor: pointer;
-    border-left: 3px solid transparent;
+    border-left: 4px solid transparent;
     transition: all 0.15s;
     border-bottom: 1px solid var(--border);
   }
-  .stadium-item:hover { background: #eaf3ee; border-left-color: var(--green); }
-  .stadium-item.active { background: #ddf0e5; border-left-color: var(--green); }
+  .stadium-item:hover { filter: brightness(0.96); }
+  .stadium-item.active { background: #fff !important; box-shadow: 0 0 0 2px var(--active-color, #1a7a3c); }
   .item-club {
     font-size: 13px;
     font-weight: 600;
@@ -381,52 +381,60 @@
       height: 48px;
       gap: 8px;
     }
+    body {
+      display: block;
+      min-height: 0;
+    }
     header h1 { font-size: 16px; letter-spacing: 1.5px; }
     .logo-badge { font-size: 11px; padding: 2px 7px 1px; flex-shrink: 0; }
-    .header-copy { display: none; }
+    .header-copy {
+      font-size: 0.6rem;
+      color: rgba(255,255,255,0.35);
+      white-space: nowrap;
+      margin-left: auto;
+    }
     .header-meta { display: none; }
 
     .app-body {
       flex-direction: column;
+      flex: none;
       min-height: 0;
       overflow: visible;
     }
 
-    /* Sidebar: hidden by default, shown as tab panel */
-    .sidebar {
+    /* Alle Tab-Panels verstecken per default */
+    .sidebar,
+    .map-wrapper,
+    .info-panel {
       display: none;
-      width: 100%;
-      max-height: 60vh;
-      border-right: none;
-      border-bottom: 1px solid var(--border);
-      overflow-y: auto;
-      flex-shrink: 0;
     }
-    .sidebar.tab-active { display: flex; }
     .sidebar-header h2 { margin-bottom: 0; }
 
     /* 2-column grid for stadium list */
     .stadium-list {
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: 1fr;
       padding: 8px;
       gap: 6px;
     }
     .stadium-item {
-      padding: 10px 12px;
+      padding: 8px 12px;
       border-bottom: none;
       border: 1px solid var(--border);
       border-radius: 8px;
-      border-left: 3px solid transparent;
+      border-left: 4px solid transparent;
     }
-    .stadium-item.active { border-left-color: var(--green); background: #ddf0e5; }
+    .stadium-item.active { background: #fff !important; box-shadow: 0 0 0 2px var(--active-color, #1a7a3c); }
+    .item-club { font-size: 13px; font-weight: 600; margin-bottom: 2px; }
+    .item-stadium-cap { display: flex; align-items: center; gap: 8px; }
+    .item-stadium { font-size: 11px; color: var(--muted); flex: 1; min-width: 0; }
+    .item-cap { font-size: 11px; color: var(--accent); font-weight: 500; white-space: nowrap; flex-shrink: 0; }
     .item-club { font-size: 12px; }
     .item-stadium { font-size: 11px; }
     .item-cap { font-size: 10px; }
 
     /* Map: full width, fixed height */
     .map-wrapper {
-      display: none;
       width: 100%;
       height: calc(100vh - 48px - 52px);
       position: relative;
@@ -434,11 +442,21 @@
     }
     .map-wrapper.tab-active { display: block; }
 
+    /* Sidebar tab-active */
+    .sidebar {
+      width: 100%;
+      max-height: calc(100vh - 48px - 52px);
+      border-right: none;
+      border-bottom: 1px solid var(--border);
+      overflow-y: auto;
+      flex-shrink: 0;
+    }
+    .sidebar.tab-active { display: flex; }
+
     /* Info panel: full width scrollable */
     .info-panel {
-      display: none;
       width: 100%;
-      max-height: none;
+      max-height: calc(100vh - 48px - 52px);
       border-left: none;
       border-top: 1px solid var(--border);
       overflow-y: auto;
@@ -496,7 +514,6 @@
   }
 
   @media (max-width: 380px) {
-    .stadium-list { grid-template-columns: 1fr; }
     header h1 { font-size: 14px; }
   }
 </style>
@@ -522,17 +539,6 @@
   <!-- MAP -->
   <div class="map-wrapper tab-active" id="mapWrapper">
     <div id="map" style="width:100%;height:100%;"></div>
-    <div class="map-legend" style="position:absolute;bottom:28px;right:10px;z-index:1000;background:rgba(255,255,255,0.92);border-radius:8px;padding:8px 12px;font-size:0.72rem;color:#444;box-shadow:0 2px 8px rgba(0,0,0,0.15);pointer-events:none;line-height:1.8;">
-      <div style="font-weight:700;margin-bottom:4px;color:#111a14;">Kreisfläche = Kapazität</div>
-      <div style="display:flex;align-items:center;gap:6px;">
-        <div style="width:20px;height:20px;background:#1a7a3c;border-radius:50%;border:2px solid rgba(255,255,255,0.85);flex-shrink:0;"></div>
-        <span>~28.000 Plätze</span>
-      </div>
-      <div style="display:flex;align-items:center;gap:6px;">
-        <div style="width:13px;height:13px;background:#1a7a3c;border-radius:50%;border:2px solid rgba(255,255,255,0.85);flex-shrink:0;margin-left:3px;"></div>
-        <span>~5.000 Plätze</span>
-      </div>
-    </div>
   </div>
 
   <!-- INFO PANEL -->
@@ -574,6 +580,7 @@ const stadien = [
   {
     id: 1,
     verein: "FK Austria Wien",
+    farbe: "#4B1E78",
     stadion: "Generali Arena",
     adresse: "Horrplatz 1, 1100 Wien",
     kapazitaet: 15600,
@@ -581,7 +588,7 @@ const stadien = [
     lat: 48.16233,
     lng: 16.38717,
     oepnv: [
-      { typ: "U", linie: "U1", text: "Station Reumannplatz, dann Bus 15A Richtung Meidling" },
+      { typ: "U", linie: "U1", text: "Station Altes Landgut (direkt am Stadion, ca. 5 Min. Fußweg)" },
       { typ: "T", linie: "62", text: "Straßenbahn 62, Station Kliebergasse" },
       { typ: "B", linie: "7A", text: "Bus 7A, Station Fischhof / Generali Arena" }
     ]
@@ -589,6 +596,7 @@ const stadien = [
   {
     id: 2,
     verein: "SK Rapid Wien",
+    farbe: "#028940",
     stadion: "Allianz Stadion",
     adresse: "Gerhard-Hanappi-Platz 1, 1140 Wien",
     kapazitaet: 28600,
@@ -604,6 +612,7 @@ const stadien = [
   {
     id: 3,
     verein: "Red Bull Salzburg",
+    farbe: "#CC0000",
     stadion: "Red Bull Arena",
     adresse: "Stadionstraße 2/3, 5071 Wals-Siezenheim",
     kapazitaet: 17218,
@@ -619,6 +628,7 @@ const stadien = [
   {
     id: 4,
     verein: "LASK",
+    farbe: "#1A1A1A",
     stadion: "Raiffeisen Arena",
     adresse: "Helmut-Köglberger-Platz 1, 4020 Linz",
     kapazitaet: 19080,
@@ -626,14 +636,15 @@ const stadien = [
     lat: 48.29372,
     lng: 14.27658,
     oepnv: [
-      { typ: "T", linie: "3", text: "Straßenbahn Linie 3, Endstation Trauner Kreuzung" },
-      { typ: "B", linie: "33", text: "Bus 33 ab Linz HBF Richtung Leonding" },
+      { typ: "B", linie: "17/19/46/45A", text: "Bus direkt zur Haltestelle Stadion" },
+      { typ: "B", linie: "27", text: "Bus 27, Haltestelle Botanischer Garten" },
       { typ: "P", linie: "P", text: "Parkhaus am Stadion verfügbar" }
     ]
   },
   {
     id: 5,
     verein: "Sturm Graz",
+    farbe: "#1A1A1A",
     stadion: "Merkur Versicherung Arena",
     adresse: "Stadionplatz 1, 8042 Graz",
     kapazitaet: 16364,
@@ -649,6 +660,7 @@ const stadien = [
   {
     id: 6,
     verein: "Wolfsberger AC",
+    farbe: "#1A1A1A",
     stadion: "Lavanttal Arena",
     adresse: "Don-Bosco-Weg 1, 9400 Wolfsberg",
     kapazitaet: 8100,
@@ -664,6 +676,7 @@ const stadien = [
   {
     id: 7,
     verein: "GAK 1902",
+    farbe: "#CC0000",
     stadion: "Merkur Arena",
     adresse: "Ivica-Osim-Platz 1, 8041 Graz",
     kapazitaet: 16364,
@@ -679,6 +692,7 @@ const stadien = [
   {
     id: 8,
     verein: "TSV Hartberg",
+    farbe: "#003DA5",
     stadion: "Profertil Arena",
     adresse: "Otto-Gerlitz-Platz 2, 8230 Hartberg",
     kapazitaet: 5024,
@@ -694,6 +708,7 @@ const stadien = [
   {
     id: 9,
     verein: "WSG Tirol",
+    farbe: "#2E7D32",
     stadion: "Tivoli Stadion Tirol",
     adresse: "Stadionstraße 1, 6020 Innsbruck",
     kapazitaet: 15200,
@@ -709,6 +724,7 @@ const stadien = [
   {
     id: 10,
     verein: "SCR Altach",
+    farbe: "#1A1A1A",
     stadion: "Stadion Schnabelholz",
     adresse: "Rheinstraße 4, 6844 Altach",
     kapazitaet: 8200,
@@ -724,6 +740,7 @@ const stadien = [
   {
     id: 11,
     verein: "FC Blau-Weiß Linz",
+    farbe: "#003DA5",
     stadion: "Hofmann Personal Stadion",
     adresse: "Straßerau 3, 4020 Linz",
     kapazitaet: 5595,
@@ -739,6 +756,7 @@ const stadien = [
   {
     id: 12,
     verein: "SV Ried",
+    farbe: "#1a7a3c",
     stadion: "BWT Oberösterreichische Arena",
     adresse: "Volksfestplatz 1, 4910 Ried im Innkreis",
     kapazitaet: 7336,
@@ -746,7 +764,7 @@ const stadien = [
     lat: 48.20781,
     lng: 13.47856,
     oepnv: [
-      { typ: "S", linie: "S4", text: "S-Bahn S4, Bahnhof Ried im Innkreis (15 Min. Fußweg)" },
+      { typ: "S", linie: "S4", text: "S-Bahn S4, Bahnhof Ried im Innkreis (ca. 25 Min. Fußweg)" },
       { typ: "B", linie: "430", text: "Regionalbus 430 ab Wels, Haltestelle Ried Bahnhof" },
       { typ: "P", linie: "P", text: "Parkplätze am Volksfestplatz direkt beim Stadion" }
     ]
@@ -769,14 +787,9 @@ const map = L.map('map', {
   zoomControl: true
 });
 
-L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-  attribution: 'Tiles © Esri — Source: Esri, Earthstar Geographics',
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
   maxZoom: 19
-}).addTo(map);
-
-L.tileLayer('https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', {
-  maxZoom: 19,
-  opacity: 1
 }).addTo(map);
 
 // Custom marker icon
@@ -792,12 +805,12 @@ function capToRadius(cap) {
   return Math.round(R_MIN + t * (R_MAX - R_MIN));
 }
 
-function createMarkerIcon(active = false, cap = 10000) {
-  const r = capToRadius(cap);
+function createMarkerIcon(active = false, cap = 10000, farbe = '#1a7a3c') {
+  const r = 12;
   const size = r * 2;
-  const bg = active ? '#fff' : '#1a7a3c';
-  const border = active ? '3px solid #1a7a3c' : '2.5px solid #fff';
-  const shadow = active ? '0 0 0 3px rgba(26,122,60,0.6), 0 3px 10px rgba(0,0,0,0.6)' : '0 2px 8px rgba(0,0,0,0.6)';
+  const bg = active ? '#fff' : farbe;
+  const border = active ? `3px solid ${farbe}` : '2.5px solid #fff';
+  const shadow = active ? `0 0 0 3px ${farbe}88, 0 3px 10px rgba(0,0,0,0.35)` : '0 2px 6px rgba(0,0,0,0.4)';
   return L.divIcon({
     html: `<div style="
       width:${size}px;
@@ -825,19 +838,25 @@ function buildList() {
   listEl.innerHTML = '';
   stadien
     .slice()
-    .sort((a, b) => a.verein.localeCompare(b.verein, 'de'))
+    .sort((a, b) => b.kapazitaet - a.kapazitaet)
     .forEach(s => {
       const item = document.createElement('div');
-      item.className = 'stadium-item' + (activeMarkerId === s.id ? ' active' : '');
+      const isActive = activeMarkerId === s.id;
+      const tint = s.farbe === '#1A1A1A' ? 'rgba(0,0,0,0.04)' : s.farbe + '18';
+      item.className = 'stadium-item' + (isActive ? ' active' : '');
+      item.style.borderLeftColor = s.farbe;
+      item.style.background = tint;
+      item.style.setProperty('--active-color', s.farbe);
       item.dataset.id = s.id;
       item.innerHTML = `
         <div class="item-club">${s.verein}</div>
-        <div class="item-stadium">${s.stadion}</div>
-        <div class="item-cap">⬡ ${s.kapazitaet.toLocaleString('de-AT')} Plätze</div>
+        <div class="item-stadium-cap">
+          <span class="item-stadium">${s.stadion}</span>
+          <span class="item-cap">⬡ ${s.kapazitaet.toLocaleString('de-AT')}</span>
+        </div>
       `;
       item.addEventListener('click', () => {
-        selectStadium._fromList = true;
-        selectStadium(s.id);
+        selectStadium(s.id, { suppressTabSwitch: true });
         if (window.innerWidth <= 768 && typeof switchTab === 'function') {
           switchTab('map');
         }
@@ -848,8 +867,80 @@ function buildList() {
 
 // Initial list build
 buildList();
+
+// Shared-venue config: Paare die dasselbe Stadion teilen
+const SHARED_VENUES = [
+  { ids: [5, 7], lat: 47.04614, lng: 15.45456 } // Sturm & GAK – Mittelpunkt
+];
+const ZOOM_SPLIT_THRESHOLD = 14; // unter diesem Zoom: Kombi-Marker
+
+function createComboMarkerIcon(stadienPair) {
+  const r = 12;
+  const size = r * 2;
+  const [c1, c2] = stadienPair.map(s => s.farbe);
+  return L.divIcon({
+    html: `<div style="
+      width:${size}px;height:${size}px;border-radius:50%;
+      background: conic-gradient(${c1} 0deg 180deg, ${c2} 180deg 360deg);
+      border:2.5px solid #fff;
+      box-shadow:0 2px 6px rgba(0,0,0,0.4);
+    "></div>`,
+    className: '',
+    iconSize: [size, size],
+    iconAnchor: [r, r]
+  });
+}
+
+const comboMarkers = [];
+
+SHARED_VENUES.forEach(venue => {
+  const pair = venue.ids.map(id => stadien.find(s => s.id === id));
+  const comboMarker = L.marker([venue.lat, venue.lng], {
+    icon: createComboMarkerIcon(pair),
+    zIndexOffset: 100
+  }).addTo(map);
+
+  comboMarker.bindPopup(`
+    <div class="popup-club" style="margin-bottom:6px;">Gemeinsames Stadion</div>
+    ${pair.map(s => `
+      <div style="margin-bottom:4px;">
+        <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${s.farbe};margin-right:5px;vertical-align:middle;"></span>
+        <button class="popup-detail-btn" style="background:${s.farbe};" onclick="selectStadium(${s.id})">${s.verein} →</button>
+      </div>
+    `).join('')}
+  `, { maxWidth: 240 });
+
+  comboMarkers.push({ marker: comboMarker, ids: venue.ids });
+});
+
+function updateSharedMarkerVisibility() {
+  const zoom = map.getZoom();
+  const splitMode = zoom >= ZOOM_SPLIT_THRESHOLD;
+
+  SHARED_VENUES.forEach((venue, i) => {
+    const combo = comboMarkers[i];
+    // Kombi-Marker: sichtbar unter Schwellenwert
+    if (splitMode) {
+      combo.marker.setOpacity(0);
+      combo.marker.options.interactive = false;
+    } else {
+      combo.marker.setOpacity(1);
+      combo.marker.options.interactive = true;
+    }
+    // Einzel-Marker: sichtbar ab Schwellenwert
+    venue.ids.forEach(id => {
+      if (markers[id]) {
+        markers[id].setOpacity(splitMode ? 1 : 0);
+        markers[id].options.interactive = splitMode;
+      }
+    });
+  });
+}
+
+map.on('zoomend', updateSharedMarkerVisibility);
+
 stadien.forEach(s => {
-  const marker = L.marker([s.lat, s.lng], { icon: createMarkerIcon(false, s.kapazitaet) }).addTo(map);
+  const marker = L.marker([s.lat, s.lng], { icon: createMarkerIcon(false, s.kapazitaet, s.farbe) }).addTo(map);
   marker.bindPopup(`
     <div class="popup-club">${s.verein}</div>
     <div class="popup-name">${s.stadion}</div>
@@ -860,20 +951,33 @@ stadien.forEach(s => {
   markers[s.id] = marker;
 });
 
+// Initial visibility check
+updateSharedMarkerVisibility();
+
 // Select stadium
-function selectStadium(id) {
+function selectStadium(id, options = {}) {
   const s = stadien.find(x => x.id === id);
   if (!s) return;
 
   // Reset previous marker
   if (activeMarkerId && markers[activeMarkerId]) {
     const prevStadion = stadien.find(x => x.id === activeMarkerId);
-    markers[activeMarkerId].setIcon(createMarkerIcon(false, prevStadion ? prevStadion.kapazitaet : 10000));
+    markers[activeMarkerId].setIcon(createMarkerIcon(false, prevStadion ? prevStadion.kapazitaet : 10000, prevStadion ? prevStadion.farbe : '#1a7a3c'));
   }
 
   activeMarkerId = id;
-  markers[id].setIcon(createMarkerIcon(true, s.kapazitaet));
-  map.flyTo([s.lat, s.lng], 16, { duration: 1.2 });
+  markers[id].setIcon(createMarkerIcon(true, s.kapazitaet, s.farbe));
+
+  // flyTo nur wenn explizit gewünscht (User-Klick), nicht beim App-Init
+  if (options.flyTo !== false) {
+    if (window.innerWidth <= 768) {
+      // Karte ist möglicherweise noch nicht sichtbar – flyTo als pending merken
+      map._pendingFlyTo = { lat: s.lat, lng: s.lng };
+    } else {
+      map.flyTo([s.lat, s.lng], 16, { duration: 1.2 });
+    }
+    map.once('moveend', updateSharedMarkerVisibility);
+  }
 
   // Sync distance widget
   const selA = document.getElementById('distA');
@@ -922,13 +1026,22 @@ function selectStadium(id) {
     </li>`;
   }).join('');
 
+  // Textfarbe je nach Helligkeit der Vereinsfarbe bestimmen
+  const hex = s.farbe.replace('#', '');
+  const r2 = parseInt(hex.slice(0,2),16), g2 = parseInt(hex.slice(2,4),16), b2 = parseInt(hex.slice(4,6),16);
+  const luminance = (0.299*r2 + 0.587*g2 + 0.114*b2) / 255;
+  const headerTextColor = luminance > 0.5 ? '#1a2b1f' : '#ffffff';
+  const headerBg = s.farbe === '#1A1A1A' ? '#2d2d2d' : s.farbe;
+
   document.getElementById('infoPlaceholder').style.display = 'none';
   const content = document.getElementById('infoContent');
   content.classList.add('visible');
   content.innerHTML = `
-    <div class="info-club-tag">${s.verein}</div>
-    <div class="info-stadium-name">${s.stadion}</div>
-    <div class="info-address">${s.adresse}</div>
+    <div style="background:${headerBg};padding:20px 20px 16px;margin:-24px -20px 20px;">
+      <div style="display:inline-block;background:rgba(255,255,255,0.2);color:${headerTextColor};font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:1.5px;padding:3px 8px;border-radius:3px;margin-bottom:8px;">${s.verein}</div>
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:1.5px;line-height:1.1;color:${headerTextColor};margin-bottom:5px;">${s.stadion}</div>
+      <div style="font-size:12px;color:${headerTextColor};opacity:0.75;line-height:1.5;">${s.adresse}</div>
+    </div>
     <div class="info-grid">
       <div class="info-stat">
         <div class="stat-label">Kapazität</div>
@@ -945,6 +1058,9 @@ function selectStadium(id) {
     </div>
     <div class="section-title">ÖPNV Anbindung</div>
     <ul class="oepnv-list">${oepnvHtml}</ul>
+    <div style="font-size:.7rem;color:#aaa;background:#f9f9f9;border-left:3px solid #ddd;padding:7px 10px;border-radius:0 4px 4px 0;margin-bottom:1rem;line-height:1.5;">
+      ⚠️ ÖPNV-Angaben ohne Gewähr – nicht offiziell verifiziert. Fußwegzeiten sind Richtwerte. Bitte vor dem Spieltag über <a href="https://www.oebb.at" target="_blank" style="color:#1a7a3c;">ÖBB</a> oder <a href="https://www.wienerlinien.at" target="_blank" style="color:#1a7a3c;">Wiener Linien</a> prüfen.
+    </div>
     <div style="font-size:.75rem;color:#888;margin:1rem 0 0;font-weight:600;text-transform:uppercase;letter-spacing:.05em;">Anreise planen</div>
     <div class="anreise-grid">
       <a class="anreise-btn auto"
@@ -966,12 +1082,11 @@ function selectStadium(id) {
     <div style="margin-top:1.5rem;">${heimHtml}</div>
   `;
 
-  // On mobile: switch to detail tab (called from popup or info panel click)
-  // List clicks handle their own tab switch
-  if (window.innerWidth <= 768 && typeof switchTab === 'function' && !selectStadium._fromList) {
+  // On mobile: switch to detail tab (called from popup or map marker click)
+  // List clicks and init suppress this via options
+  if (window.innerWidth <= 768 && typeof switchTab === 'function' && !options.suppressTabSwitch) {
     switchTab('detail');
   }
-  selectStadium._fromList = false;
 }
 
 // Make global for popup button
@@ -1001,7 +1116,23 @@ function switchTab(name) {
 
     // Show selected panel
     if (name === 'list')   document.querySelector('.sidebar').classList.add('tab-active');
-    if (name === 'map')    { document.getElementById('mapWrapper').classList.add('tab-active'); setTimeout(() => map.invalidateSize(), 50); }
+    if (name === 'map')    {
+      document.getElementById('mapWrapper').classList.add('tab-active');
+      setTimeout(() => {
+        map.invalidateSize();
+        // Auf Mobile: Österreich etwas weiter rausgezoomt als Desktop
+        if (!map._hasSetMobileZoom) {
+          map.setView([47.6, 13.8], 6);
+          map._hasSetMobileZoom = true;
+        }
+        // Verzögerten flyTo ausführen falls einer aussteht
+        if (map._pendingFlyTo) {
+          const { lat, lng } = map._pendingFlyTo;
+          map.flyTo([lat, lng], 16, { duration: 1.2 });
+          map._pendingFlyTo = null;
+        }
+      }, 80);
+    }
     if (name === 'detail') document.querySelector('.info-panel').classList.add('tab-active');
     if (name === 'dist')   document.getElementById('distSection').style.display = 'block';
   }
@@ -1032,8 +1163,20 @@ function buildDistanceSelects() {
     selA.innerHTML += `<option value="${i}">${s.verein}</option>`;
     selB.innerHTML += `<option value="${i}">${s.verein}</option>`;
   });
-  selB.selectedIndex = 1;
+  setFarthestOpponent(0);
   calcDistance();
+}
+
+// Auto-select farthest opponent for distB based on distA
+function setFarthestOpponent(aIndex) {
+  const a = stadien[aIndex];
+  let maxKm = -1, maxIdx = -1;
+  stadien.forEach((s, i) => {
+    if (i === aIndex) return;
+    const d = haversine(a.lat, a.lng, s.lat, s.lng);
+    if (d > maxKm) { maxKm = d; maxIdx = i; }
+  });
+  if (maxIdx >= 0) document.getElementById('distB').selectedIndex = maxIdx;
 }
 
 function calcDistance() {
@@ -1197,7 +1340,7 @@ function buildAllDistances(filterId) {
 </script>
 
 <!-- DISTANZ-WIDGET -->
-<section id="distSection" style="background:#fff;border-top:3px solid #1a7a3c;padding:1.2rem 1.5rem;font-family:inherit;">
+<section id="distSection" style="background:#fff;border-top:3px solid #1a7a3c;padding:1.2rem 1.5rem 80px;font-family:inherit;">
   <h2 style="margin:0 0 1.2rem;font-size:1.1rem;color:#111a14;letter-spacing:.05em;text-transform:uppercase;">Stadion-Distanzrechner</h2>
   <div class="dist-row-top" style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap;margin-bottom:1.5rem;">
     <select id="distA" style="flex:1;min-width:160px;padding:8px 10px;border:1px solid #ccc;border-radius:6px;font-size:.9rem;"></select>
@@ -1234,26 +1377,38 @@ buildDistanceSelects();
 buildAllDistances();
 preloadAllDriveTimes();
 
-// Mobile init: hide distSection, show map tab
+// Ried als aktives Stadion: Marker + Info-Panel, aber KEIN flyTo beim Start
+const riedId = stadien.find(s => s.verein === 'SV Ried').id;
+const riedIdx = stadien.findIndex(s => s.verein === 'SV Ried');
+selectStadium(riedId, { flyTo: false, suppressTabSwitch: true });
+
+// distA auf Ried, distB automatisch auf weitesten Gegner
+document.getElementById('distA').selectedIndex = riedIdx;
+setFarthestOpponent(riedIdx);
+calcDistance();
+buildAllDistances(riedId);
+
 if (window.innerWidth <= 768) {
+  // Mobile: distSection verstecken, Vereine-Tab als Standard
   document.getElementById('distSection').style.display = 'none';
+  switchTab('list');
+} else {
+  // Desktop: Karte auf Österreich-Gesamtübersicht
+  map.setView([47.6, 13.8], 7);
 }
 
-// Heimstadion beim Start anzeigen
-const riedId = stadien.find(s => s.verein === 'SV Ried').id;
-selectStadium(riedId);
 document.getElementById('distA').addEventListener('change', () => {
-  calcDistance();
   const idx = parseInt(document.getElementById('distA').value);
+  setFarthestOpponent(idx);
+  calcDistance();
   buildAllDistances(stadien[idx].id);
 });
 document.getElementById('distB').addEventListener('change', calcDistance);
 
-// Handle orientation change / resize
+// Orientierungswechsel / Resize
 window.addEventListener('resize', () => {
   map.invalidateSize();
   if (window.innerWidth > 768) {
-    // Restore desktop layout
     document.querySelector('.sidebar').classList.remove('tab-active');
     document.getElementById('distSection').style.display = '';
   }
